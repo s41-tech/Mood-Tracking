@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_FULL  = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_SHORT = ["S",   "M",   "T",   "W",   "T",   "F",   "S"  ];
 
 const MOOD_META: Record<string, { color: string; hex: string; emoji: string }> = {
   Happy:   { color: "bg-yellow-400", hex: "#facc15", emoji: "😊" },
@@ -38,46 +39,39 @@ export default function Calendar({
   filterMood?: string | null;
 }) {
   const today = new Date();
-  const [current, setCurrent] = useState({
-    year: today.getFullYear(),
-    month: today.getMonth(),
-  });
+  const [current, setCurrent] = useState({ year: today.getFullYear(), month: today.getMonth() });
 
   const firstDay    = new Date(current.year, current.month, 1).getDay();
   const daysInMonth = new Date(current.year, current.month + 1, 0).getDate();
 
-  const prevMonth = () => setCurrent(c => {
-    const d = new Date(c.year, c.month - 1);
-    return { year: d.getFullYear(), month: d.getMonth() };
-  });
-
-  const nextMonth = () => setCurrent(c => {
-    const d = new Date(c.year, c.month + 1);
-    return { year: d.getFullYear(), month: d.getMonth() };
-  });
+  const prevMonth = () => setCurrent(c => { const d = new Date(c.year, c.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; });
+  const nextMonth = () => setCurrent(c => { const d = new Date(c.year, c.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; });
 
   const formatDate = (day: number) => `${current.year}-${current.month + 1}-${day}`;
   const monthName = new Date(current.year, current.month).toLocaleString("en-US", { month: "long" });
 
   return (
-    <div className="bg-[#1a1a1a] border border-gray-700 rounded-2xl p-6 w-full max-w-lg">
+    <div className="bg-[#1a1a1a] border border-gray-700 rounded-2xl p-3 sm:p-5 md:p-6 w-full max-w-lg">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <button onClick={prevMonth} className="text-gray-400 hover:text-white transition text-xl px-2">‹</button>
-        <h2 className="text-white font-bold text-lg">{monthName} {current.year}</h2>
-        <button onClick={nextMonth} className="text-gray-400 hover:text-white transition text-xl px-2">›</button>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <button onClick={prevMonth} className="text-gray-400 hover:text-white transition text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700">‹</button>
+        <h2 className="text-white font-bold text-base sm:text-lg">{monthName} {current.year}</h2>
+        <button onClick={nextMonth} className="text-gray-400 hover:text-white transition text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700">›</button>
       </div>
 
       {/* Day labels */}
-      <div className="grid grid-cols-7 mb-2">
-        {DAYS.map(d => (
-          <div key={d} className="text-center text-gray-500 text-xs font-semibold py-1">{d}</div>
+      <div className="grid grid-cols-7 mb-1 sm:mb-2">
+        {DAYS_FULL.map((d, i) => (
+          <div key={d} className="text-center text-gray-500 font-semibold py-1">
+            <span className="hidden sm:inline text-xs">{d}</span>
+            <span className="sm:hidden text-[10px]">{DAYS_SHORT[i]}</span>
+          </div>
         ))}
       </div>
 
       {/* Date grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
 
         {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -86,8 +80,7 @@ export default function Calendar({
           const entry   = moodData[dateStr];
 
           const isToday = today.getFullYear() === current.year &&
-            today.getMonth() === current.month &&
-            today.getDate() === day;
+            today.getMonth() === current.month && today.getDate() === day;
 
           const moods   = resolveMoods(entry);
           const meta1   = moods[0] ? MOOD_META[moods[0]] : null;
@@ -95,11 +88,9 @@ export default function Calendar({
           const hasMood = !!meta1;
           const hasTags = entry?.tags?.length > 0;
 
-          // ── Filter logic ───────────────────────────────
           const matchesFilter = !filterMood || moods.includes(filterMood);
           const dimmed = filterMood && hasMood && !matchesFilter;
 
-          // ── Cell background ────────────────────────────
           const cellStyle: React.CSSProperties = hasMood && matchesFilter
             ? meta2
               ? { background: `linear-gradient(135deg, ${meta1!.hex} 0%, ${meta2.hex} 100%)` }
@@ -107,32 +98,28 @@ export default function Calendar({
             : {};
 
           return (
-            <button
-              key={day}
-              onClick={() => onSelectDate(dateStr)}
+            <button key={day} onClick={() => onSelectDate(dateStr)}
               style={hasMood && matchesFilter ? cellStyle : {}}
               className={`
                 relative aspect-square flex flex-col items-center justify-center
-                rounded-lg text-sm font-medium transition-all duration-200
+                rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all duration-200
+                min-w-0
                 ${isToday ? "ring-2 ring-purple-500" : ""}
                 ${hasMood && matchesFilter
                   ? "text-white shadow-md hover:brightness-110"
-                  : dimmed
-                  ? "text-gray-700 bg-gray-900"
-                  : hasMood
-                  ? "text-white shadow-md hover:brightness-110"
+                  : dimmed ? "text-gray-700 bg-gray-900 opacity-25"
+                  : hasMood ? "text-white shadow-md hover:brightness-110"
                   : "text-gray-300 hover:bg-gray-700"}
-                ${dimmed ? "opacity-25" : ""}
               `}
             >
-              <span className="text-xs leading-none drop-shadow-sm">{day}</span>
+              <span className="text-[10px] sm:text-xs leading-none drop-shadow-sm">{day}</span>
               {hasMood && !dimmed && (
-                <span className="text-[11px] leading-none mt-0.5 drop-shadow">
+                <span className="text-[9px] sm:text-[11px] leading-none mt-0.5 drop-shadow">
                   {meta1!.emoji}{meta2 ? meta2.emoji : ""}
                 </span>
               )}
               {hasTags && !dimmed && (
-                <span className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-white/70" />
+                <span className="absolute bottom-0.5 right-0.5 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/70" />
               )}
             </button>
           );
